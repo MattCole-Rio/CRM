@@ -1,20 +1,21 @@
 @page "/crm/contacts"
-@using Crm.Application.CRM
-@using Crm.Application.Permissions
+@using  global::Crm.Application.CRM
+@using  global::Crm.Application.Permissions
+@using global::Crm.Application.CRM.DTOs
 @inject IContactService ContactsSvc
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
+@inject global::Crm.Application.Common.ICurrentUser CurrentUser
+@inject global::Crm.Application.Permissions.IPermissionService PermissionService
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <h3>Contacts</h3>
 
-@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactView))
+@if (!_canViewContacts)
 {
     <p>Not authorized.</p>
     return;
 }
 
-@if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactCreate))
+@if (_canCreateContacts)
 {
     <p><a class="btn btn-primary" href="/crm/contacts/new">New Contact</a></p>
 }
@@ -43,10 +44,24 @@ else
 }
 
 @code {
-    private IReadOnlyList<Crm.Application.CRM.DTOs.ContactDto>? _rows;
+
+    private IReadOnlyList<ContactDto>? _rows;
+    private bool _canCreateContacts;
+    private bool _canViewContacts;
+
 
     protected override async Task OnInitializedAsync()
     {
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+
+
+
+        _canCreateContacts = await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactCreate);
+        _canViewContacts = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Crm.ContactView);
+
         _rows = await ContactsSvc.GetContactsAsync(CurrentUser.UserId!);
     }
 }

@@ -1,15 +1,16 @@
 @page "/crm/businesses/{Id:guid}"
-@using Crm.Application.CRM
-@using Crm.Application.Permissions
-@inject IBusinessService Businesses
-@inject IContactService Contacts
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
+@using global::Crm.Application.CRM
+@using global::Crm.Application.Permissions
+@using global::Crm.Application.CRM.DTOs
+@inject global::Crm.Application.CRM.IBusinessService Businesses
+@inject global::Crm.Application.CRM.IContactService Contacts
+@inject global::Crm.Application.Common.ICurrentUser CurrentUser
+@inject global::Crm.Application.Permissions.IPermissionService PermissionService
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <h3>Business</h3>
 
-@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessView))
+@if (!_canViewBusinesses)
 {
     <p>Not authorized.</p>
     return;
@@ -23,7 +24,7 @@ else
 {
     <h4>@_business.Name</h4>
 
-    @if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessEdit))
+    @if (_canEditBusinesses)
     {
         <EditForm Model="_model" OnValidSubmit="Save">
             <DataAnnotationsValidator />
@@ -72,15 +73,32 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private Crm.Application.CRM.DTOs.BusinessDto? _business;
+    private BusinessDto? _business;
     private BusinessEditModel _model = new();
 
-    private IReadOnlyList<Crm.Application.CRM.DTOs.ContactDto>? _allContacts;
+    private IReadOnlyList<ContactDto>? _allContacts;
     private Guid? _selectedContactId;
+
+
+    private bool _canViewBusinesses;
+    private bool _canEditBusinesses;
+
+  
 
     protected override async Task OnInitializedAsync()
     {
-        _business = await Businesses.GetBusinessAsync(CurrentUser.UserId!, Id);
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+
+
+        _canViewBusinesses = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Crm.BusinessView);
+
+        _canEditBusinesses = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Crm.BusinessEdit);
+
+
+        _business = await Businesses.GetBusinessAsync(userId, Id);
         if (_business is null) return;
 
         _model.Name = _business.Name;
@@ -103,3 +121,6 @@ else
         await Businesses.LinkContactAsync(CurrentUser.UserId!, Id, _selectedContactId.Value);
     }
 }
+
+
+

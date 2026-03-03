@@ -1,15 +1,15 @@
 @page "/crm/businesses/new"
-@using Crm.Application.CRM
-@using Crm.Application.Permissions
-@inject IBusinessService Businesses
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
-@inject NavigationManager Nav
+@using global::Crm.Application.CRM
+@using global::Crm.Application.Permissions
+@inject global::Crm.Application.CRM.IBusinessService Businesses
+@inject global::Crm.Application.Common.ICurrentUser CurrentUser
+@inject global::Crm.Application.Permissions.IPermissionService PermissionService
+@inject global::Microsoft.AspNetCore.Components.NavigationManager Nav
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <h3>New Business</h3>
 
-@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessCreate))
+@if (!_canCreateBusinesses)
 {
     <p>Not authorized.</p>
     return;
@@ -43,7 +43,16 @@
 </EditForm>
 
 @code {
+
     private BusinessEditModel _model = new();
+    private bool _canCreateBusinesses;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+         _canCreateBusinesses = await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessCreate);
+    }
 
     private async Task Save()
     {

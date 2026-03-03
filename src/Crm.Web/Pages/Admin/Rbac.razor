@@ -1,13 +1,13 @@
 @page "/admin/rbac"
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
-@inject Crm.Infrastructure.Data.AppDbContext Db
-@inject Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> RoleManager
+@inject global::Crm.Application.Common.ICurrentUser CurrentUser
+@inject global::Crm.Application.Permissions.IPermissionService PermissionService
+@inject global::Crm.Infrastructure.Data.AppDbContext Db
+@inject global::Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> RoleManager
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <h3>RBAC Admin</h3>
 
-@if (!CurrentUser.IsAuthenticated || !await PermissionService.HasPermissionAsync(CurrentUser.UserId!, Crm.Application.Permissions.PermissionKeys.Rbac.Manage))
+@if (!CurrentUser.IsAuthenticated || !_canManageRbac)
 {
     <p>Not authorized.</p>
     return;
@@ -41,8 +41,18 @@ else
 @code {
     private List<Microsoft.AspNetCore.Identity.IdentityRole>? _roles;
 
+    private bool _canManageRbac;
+
     protected override async Task OnInitializedAsync()
     {
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+
         _roles = RoleManager.Roles.OrderBy(r => r.Name).ToList();
+        _canManageRbac = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Rbac.Manage);
+    
     }
 }
+

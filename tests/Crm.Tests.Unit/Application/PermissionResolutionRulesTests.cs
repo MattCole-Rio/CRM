@@ -1,5 +1,6 @@
 using Crm.Application.Permissions;
 using FluentAssertions;
+using Xunit;
 
 namespace Crm.Tests.Unit.Application;
 

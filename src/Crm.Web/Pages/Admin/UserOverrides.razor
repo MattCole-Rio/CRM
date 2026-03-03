@@ -1,13 +1,15 @@
 @page "/admin/rbac/overrides"
+@using global::Crm.Application.Permissions
 @using System.ComponentModel.DataAnnotations
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
-@inject Crm.Infrastructure.Data.AppDbContext Db
+@using global::Crm.Infrastructure.Data.Entities
+@inject global::Crm.Application.Common.ICurrentUser CurrentUser
+@inject global::Crm.Application.Permissions.IPermissionService PermissionService
+@inject global::Crm.Infrastructure.Data.AppDbContext Db
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <h3>User Permission Overrides</h3>
 
-@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, Crm.Application.Permissions.PermissionKeys.Rbac.Manage))
+@if (!_canManageRbac)
 {
     <p>Not authorized.</p>
     return;
@@ -58,8 +60,8 @@
 </table>
 
 @code {
-    private List<Crm.Infrastructure.Data.Entities.Permission> _permissions = new();
-    private List<Crm.Infrastructure.Data.Entities.UserPermissionOverride> _rows = new();
+    private List<Permission> _permissions = new();
+    private List<UserPermissionOverride> _rows = new();
 
     private FormModel _form = new();
 
@@ -75,13 +77,13 @@
     {
         var perm = Db.Permissions.Single(p => p.PermissionId == _form.PermissionId);
 
-        Db.UserPermissionOverrides.Add(new Crm.Infrastructure.Data.Entities.UserPermissionOverride
+        Db.UserPermissionOverrides.Add(new UserPermissionOverride
         {
             UserPermissionOverrideId = Guid.NewGuid(),
             TenantId = perm.TenantId,
             UserId = _form.UserId,
             PermissionId = perm.PermissionId,
-            Effect = Enum.Parse<Crm.Application.Permissions.PermissionEffect>(_form.Effect)
+            Effect = Enum.Parse<PermissionEffect>(_form.Effect)
         });
 
         await Db.SaveChangesAsync();
@@ -95,5 +97,21 @@
 
         public Guid PermissionId { get; set; }
         public string Effect { get; set; } = "Allow";
+    }
+}
+
+@code {
+  
+    private bool _canManageRbac;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+
+       
+        _canManageRbac = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Rbac.Manage);
     }
 }

@@ -1,10 +1,12 @@
 @page "/admin/seed"
 @attribute [Authorize]
 
-@using Crm.Infrastructure.Data.Entities
-@inject Crm.Infrastructure.Data.AppDbContext Db
-@inject Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> Roles
-@inject Microsoft.AspNetCore.Identity.UserManager<Crm.Infrastructure.Identity.ApplicationUser> Users
+@using global::Crm.Infrastructure.Data.Entities
+//@using global::Crm.Infrastructure.Identity
+@using Microsoft.AspNetCore.Identity
+@inject global::Crm.Infrastructure.Data.AppDbContext Db
+@inject global::Microsoft.AspNetCore.Identity.RoleManager<IdentityRole> Roles
+@inject global::Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> Users
 @inject ITenantProvider Tenant
 
 <h3>Development Seed</h3>
@@ -66,7 +68,7 @@
 
         if (!Db.RolePermissions.Any(rp => rp.RoleId == adminRole!.Id && rp.PermissionId == permManage.PermissionId))
         {
-            Db.RolePermissions.Add(new Crm.Infrastructure.Data.Entities.RolePermission
+            Db.RolePermissions.Add(new RolePermission
             {
                 TenantId = Tenant.TenantId,
                 RoleId = adminRole!.Id,

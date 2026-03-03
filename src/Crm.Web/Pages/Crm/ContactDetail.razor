@@ -1,14 +1,15 @@
 @page "/crm/contacts/{Id:guid}"
-@using Crm.Application.CRM
-@using Crm.Application.Permissions
-@inject IContactService ContactsSvc
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
+@using global::Crm.Application.CRM
+@using global::Crm.Application.Permissions
+@using global::Crm.Application.CRM.DTOs
+@inject global::Crm.Application.CRM.IContactService ContactsSvc
+@inject global::Crm.Application.Common.ICurrentUser CurrentUser
+@inject global::Crm.Application.Permissions.IPermissionService PermissionService
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <h3>Contact</h3>
 
-@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactView))
+@if (!_canViewContacts)
 {
     <p>Not authorized.</p>
     return;
@@ -22,7 +23,7 @@ else
 {
     <h4>@_contact.LastName, @_contact.FirstName</h4>
 
-    @if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactEdit))
+    @if (_canEditContacts)
     {
         <EditForm Model="_model" OnValidSubmit="Save">
             <DataAnnotationsValidator />
@@ -56,11 +57,24 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private Crm.Application.CRM.DTOs.ContactDto? _contact;
+    private ContactDto? _contact;
     private ContactEditModel _model = new();
+    
+
+    private bool _canEditContacts;
+    private bool _canViewContacts;
 
     protected override async Task OnInitializedAsync()
     {
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+
+        _canEditContacts = await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactEdit);
+        _canViewContacts = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Crm.ContactView);
+       
+ 
         _contact = await ContactsSvc.GetContactAsync(CurrentUser.UserId!, Id);
         if (_contact is null) return;
 

@@ -7,13 +7,13 @@
 
 <h3>Businesses</h3>
 
-@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessView))
+@if (!_canViewBusinesses)
 {
     <p>Not authorized.</p>
     return;
 }
 
-@if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessCreate))
+@if (_canCreateBusinesses)
 {
     <p><a class="btn btn-primary" href="/crm/businesses/new">New Business</a></p>
 }
@@ -42,10 +42,24 @@ else
 }
 
 @code {
+
+
+
     private IReadOnlyList<BusinessDto>? _rows;
+    private bool _canViewBusinesses;
+    private bool _canCreateBusinesses; 
 
     protected override async Task OnInitializedAsync()
     {
         _rows = await BusinessService.GetBusinessesAsync(CurrentUser.UserId!);
+
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+
+       _canCreateBusinesses =  await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessCreate);
+        _canViewBusinesses = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Crm.BusinessView);
+        
     }
 }

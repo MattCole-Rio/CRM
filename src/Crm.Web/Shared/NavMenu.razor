@@ -13,21 +13,21 @@
         <a class="nav-link" href="">Home</a>
     </li>
 
-    @if (CurrentUser.IsAuthenticated && await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessView))
+    @if (CurrentUser.IsAuthenticated &&  _canViewBusinesses)
     {
         <li class="nav-item px-3">
             <a class="nav-link" href="crm/businesses">Businesses</a>
         </li>
     }
 
-    @if (CurrentUser.IsAuthenticated && await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactView))
+    @if (CurrentUser.IsAuthenticated && _canViewContacts)
     {
         <li class="nav-item px-3">
             <a class="nav-link" href="crm/contacts">Contacts</a>
         </li>
     }
 
-    @if (CurrentUser.IsAuthenticated && await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Rbac.Manage))
+    @if (CurrentUser.IsAuthenticated && _canManageRbac)
     {
         <li class="nav-item px-3">
             <a class="nav-link" href="admin/rbac">Admin: RBAC</a>
@@ -38,3 +38,21 @@
         <a class="nav-link" href="admin/seed">Dev Seed</a>
     </li>
 </ul>
+
+@code {
+    private bool _canViewBusinesses;
+    private bool _canViewContacts;
+    private bool _canManageRbac;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+
+        _canViewBusinesses = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Crm.BusinessView);
+        _canViewContacts = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Crm.ContactView);
+        _canManageRbac = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Rbac.Manage);
+    }
+}

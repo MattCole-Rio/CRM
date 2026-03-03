@@ -1,5 +1,6 @@
 using Crm.Domain.CRM;
 using FluentAssertions;
+using Xunit;
 
 namespace Crm.Tests.Unit.Domain;
 

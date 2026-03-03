@@ -1,12 +1,14 @@
 @page "/admin/rbac/role/{RoleId}"
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
-@inject Crm.Infrastructure.Data.AppDbContext Db
+@using global::Crm.Application.Permissions
+@using global::Crm.Infrastructure.Data.Entities
+@inject global::Crm.Application.Common.ICurrentUser CurrentUser
+@inject global::Crm.Application.Permissions.IPermissionService PermissionService
+@inject global::Crm.Infrastructure.Data.AppDbContext Db
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 
 <h3>Role Permissions</h3>
 
-@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, Crm.Application.Permissions.PermissionKeys.Rbac.Manage))
+@if (!_canManageRbac)
 {
     <p>Not authorized.</p>
     return;
@@ -43,9 +45,15 @@ else
     private Microsoft.AspNetCore.Identity.IdentityRole? _role;
     private List<Permission> _permissions = new();
     private HashSet<Guid> _assignedPermissionIds = new();
+    private bool _canManageRbac;
 
     protected override async Task OnInitializedAsync()
     {
+        if (!CurrentUser.IsAuthenticated || string.IsNullOrWhiteSpace(CurrentUser.UserId))
+            return;
+
+        var userId = CurrentUser.UserId;
+        _canManageRbac = await PermissionService.HasPermissionAsync(userId, PermissionKeys.Rbac.Manage);
         _role = await Db.Roles.FindAsync(RoleId);
         _permissions = Db.Permissions.OrderBy(p => p.Key).ToList();
         _assignedPermissionIds = Db.RolePermissions.Where(rp => rp.RoleId == RoleId).Select(rp => rp.PermissionId).ToHashSet();
@@ -57,7 +65,7 @@ else
         {
             if (!Db.RolePermissions.Any(rp => rp.RoleId == RoleId && rp.PermissionId == permissionId))
             {
-                Db.RolePermissions.Add(new Crm.Infrastructure.Data.Entities.RolePermission
+                Db.RolePermissions.Add(new RolePermission
                 {
                     TenantId = _permissions.First().TenantId,
                     RoleId = RoleId,
