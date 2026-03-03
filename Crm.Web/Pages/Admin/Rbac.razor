@@ -1,0 +1,48 @@
+@page "/admin/rbac"
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@inject Crm.Infrastructure.Data.AppDbContext Db
+@inject Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> RoleManager
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>RBAC Admin</h3>
+
+@if (!CurrentUser.IsAuthenticated || !await PermissionService.HasPermissionAsync(CurrentUser.UserId!, Crm.Application.Permissions.PermissionKeys.Rbac.Manage))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+<p>
+    Minimal admin view. Use Dev Seed to create baseline roles/permissions.
+</p>
+
+<h4>Roles</h4>
+@if (_roles is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var r in _roles)
+        {
+            <li>
+                <b>@r.Name</b>
+                (<a href="/admin/rbac/role/@r.Id">edit permissions</a>)
+            </li>
+        }
+    </ul>
+}
+
+<h4>User Overrides</h4>
+<p><a href="/admin/rbac/overrides">Manage user permission overrides</a></p>
+
+@code {
+    private List<Microsoft.AspNetCore.Identity.IdentityRole>? _roles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _roles = RoleManager.Roles.OrderBy(r => r.Name).ToList();
+    }
+}

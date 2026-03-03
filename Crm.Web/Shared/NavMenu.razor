@@ -1,0 +1,40 @@
+@using Crm.Application.Permissions
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+
+<nav class="navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">CRM</a>
+    </div>
+</nav>
+
+<ul class="nav flex-column">
+    <li class="nav-item px-3">
+        <a class="nav-link" href="">Home</a>
+    </li>
+
+    @if (CurrentUser.IsAuthenticated && await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessView))
+    {
+        <li class="nav-item px-3">
+            <a class="nav-link" href="crm/businesses">Businesses</a>
+        </li>
+    }
+
+    @if (CurrentUser.IsAuthenticated && await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactView))
+    {
+        <li class="nav-item px-3">
+            <a class="nav-link" href="crm/contacts">Contacts</a>
+        </li>
+    }
+
+    @if (CurrentUser.IsAuthenticated && await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Rbac.Manage))
+    {
+        <li class="nav-item px-3">
+            <a class="nav-link" href="admin/rbac">Admin: RBAC</a>
+        </li>
+    }
+
+    <li class="nav-item px-3">
+        <a class="nav-link" href="admin/seed">Dev Seed</a>
+    </li>
+</ul>

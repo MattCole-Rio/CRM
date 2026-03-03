@@ -1,0 +1,81 @@
+@page "/admin/rbac/role/{RoleId}"
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@inject Crm.Infrastructure.Data.AppDbContext Db
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>Role Permissions</h3>
+
+@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, Crm.Application.Permissions.PermissionKeys.Rbac.Manage))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+@if (_role is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <h4>@_role.Name</h4>
+
+    <table class="table">
+        <thead><tr><th>Permission</th><th>Assigned</th></tr></thead>
+        <tbody>
+        @foreach (var p in _permissions)
+        {
+            var assigned = _assignedPermissionIds.Contains(p.PermissionId);
+            <tr>
+                <td>@p.Key</td>
+                <td>
+                    <input type="checkbox" checked="@assigned" @onchange="(e) => Toggle(p.PermissionId, (bool)e.Value!)" />
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter] public string RoleId { get; set; } = string.Empty;
+
+    private Microsoft.AspNetCore.Identity.IdentityRole? _role;
+    private List<Crm.Infrastructure.Data.Entities.Permission> _permissions = new();
+    private HashSet<Guid> _assignedPermissionIds = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _role = await Db.Roles.FindAsync(RoleId);
+        _permissions = Db.Permissions.OrderBy(p => p.Key).ToList();
+        _assignedPermissionIds = Db.RolePermissions.Where(rp => rp.RoleId == RoleId).Select(rp => rp.PermissionId).ToHashSet();
+    }
+
+    private async Task Toggle(Guid permissionId, bool assign)
+    {
+        if (assign)
+        {
+            if (!Db.RolePermissions.Any(rp => rp.RoleId == RoleId && rp.PermissionId == permissionId))
+            {
+                Db.RolePermissions.Add(new Crm.Infrastructure.Data.Entities.RolePermission
+                {
+                    TenantId = _permissions.First().TenantId,
+                    RoleId = RoleId,
+                    PermissionId = permissionId
+                });
+                await Db.SaveChangesAsync();
+                _assignedPermissionIds.Add(permissionId);
+            }
+        }
+        else
+        {
+            var rp = Db.RolePermissions.SingleOrDefault(rp => rp.RoleId == RoleId && rp.PermissionId == permissionId);
+            if (rp is not null)
+            {
+                Db.RolePermissions.Remove(rp);
+                await Db.SaveChangesAsync();
+                _assignedPermissionIds.Remove(permissionId);
+            }
+        }
+    }
+}

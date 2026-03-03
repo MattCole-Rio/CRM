@@ -1,0 +1,21 @@
+.page {
+    display: flex;
+    min-height: 100vh;
+}
+.sidebar {
+    width: 250px;
+    background: #2b2b2b;
+    color: white;
+}
+.content {
+    padding-top: 1rem;
+}
+.top-row {
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+.nav-link { color: #ddd; }
+.nav-link:hover { color: white; }

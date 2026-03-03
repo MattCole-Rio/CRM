@@ -1,0 +1,52 @@
+@page "/crm/contacts"
+@using Crm.Application.CRM
+@using Crm.Application.Permissions
+@inject IContactService ContactsSvc
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>Contacts</h3>
+
+@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactView))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+@if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactCreate))
+{
+    <p><a class="btn btn-primary" href="/crm/contacts/new">New Contact</a></p>
+}
+
+@if (_rows is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr><th>Name</th><th>Email</th><th>Phone</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var c in _rows)
+        {
+            <tr>
+                <td><a href="/crm/contacts/@c.Id">@c.LastName, @c.FirstName</a></td>
+                <td>@c.Email</td>
+                <td>@c.Phone</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<Crm.Application.CRM.DTOs.ContactDto>? _rows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _rows = await ContactsSvc.GetContactsAsync(CurrentUser.UserId!);
+    }
+}

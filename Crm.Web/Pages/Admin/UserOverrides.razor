@@ -1,0 +1,98 @@
+@page "/admin/rbac/overrides"
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@inject Crm.Infrastructure.Data.AppDbContext Db
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>User Permission Overrides</h3>
+
+@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, Crm.Application.Permissions.PermissionKeys.Rbac.Manage))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+<p>Minimal editor: add an override row for a user and permission.</p>
+
+<EditForm Model="_form" OnValidSubmit="AddOverride">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-2">
+        <label>UserId (AspNetUsers.Id)</label>
+        <InputText class="form-control" @bind-Value="_form.UserId" />
+    </div>
+    <div class="mb-2">
+        <label>Permission</label>
+        <select class="form-select" @bind="_form.PermissionId">
+            @foreach (var p in _permissions)
+            {
+                <option value="@p.PermissionId">@p.Key</option>
+            }
+        </select>
+    </div>
+    <div class="mb-2">
+        <label>Effect</label>
+        <select class="form-select" @bind="_form.Effect">
+            <option value="Allow">Allow</option>
+            <option value="Deny">Deny</option>
+        </select>
+    </div>
+    <button class="btn btn-primary" type="submit">Add</button>
+</EditForm>
+
+<hr />
+<table class="table">
+    <thead><tr><th>User</th><th>Permission</th><th>Effect</th></tr></thead>
+    <tbody>
+    @foreach (var row in _rows)
+    {
+        <tr>
+            <td>@row.UserId</td>
+            <td>@row.Permission.Key</td>
+            <td>@row.Effect</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@code {
+    private List<Crm.Infrastructure.Data.Entities.Permission> _permissions = new();
+    private List<Crm.Infrastructure.Data.Entities.UserPermissionOverride> _rows = new();
+
+    private FormModel _form = new();
+
+    protected override void OnInitialized()
+    {
+        _permissions = Db.Permissions.OrderBy(p => p.Key).ToList();
+        _rows = Db.UserPermissionOverrides.OrderByDescending(x => x.UserPermissionOverrideId).Take(50).ToList();
+        if (_permissions.Count > 0)
+            _form.PermissionId = _permissions[0].PermissionId;
+    }
+
+    private async Task AddOverride()
+    {
+        var perm = Db.Permissions.Single(p => p.PermissionId == _form.PermissionId);
+
+        Db.UserPermissionOverrides.Add(new Crm.Infrastructure.Data.Entities.UserPermissionOverride
+        {
+            UserPermissionOverrideId = Guid.NewGuid(),
+            TenantId = perm.TenantId,
+            UserId = _form.UserId,
+            PermissionId = perm.PermissionId,
+            Effect = Enum.Parse<Crm.Application.Permissions.PermissionEffect>(_form.Effect)
+        });
+
+        await Db.SaveChangesAsync();
+        _rows = Db.UserPermissionOverrides.OrderByDescending(x => x.UserPermissionOverrideId).Take(50).ToList();
+    }
+
+    private sealed class FormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required]
+        public string UserId { get; set; } = string.Empty;
+
+        public Guid PermissionId { get; set; }
+        public string Effect { get; set; } = "Allow";
+    }
+}

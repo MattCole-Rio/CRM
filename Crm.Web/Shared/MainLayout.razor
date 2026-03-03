@@ -1,0 +1,21 @@
+@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="Identity/Account/Manage">Profile</a>
+            <span class="px-2">|</span>
+            <a href="Identity/Account/Login">Login</a>
+            <span class="px-2">|</span>
+            <a href="Identity/Account/Logout">Logout</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

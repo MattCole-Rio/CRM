@@ -1,0 +1,52 @@
+@page "/crm/businesses"
+@using Crm.Application.CRM
+@using Crm.Application.Permissions
+@inject IBusinessService Businesses
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>Businesses</h3>
+
+@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessView))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+@if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessCreate))
+{
+    <p><a class="btn btn-primary" href="/crm/businesses/new">New Business</a></p>
+}
+
+@if (_rows is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Name</th><th>Email</th><th>Phone</th></tr>
+        </thead>
+        <tbody>
+        @foreach (var b in _rows)
+        {
+            <tr>
+                <td><a href="/crm/businesses/@b.Id">@b.Name</a></td>
+                <td>@b.Email</td>
+                <td>@b.Phone</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<Crm.Application.CRM.DTOs.BusinessDto>? _rows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _rows = await Businesses.GetBusinessesAsync(CurrentUser.UserId!);
+    }
+}

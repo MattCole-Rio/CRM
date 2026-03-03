@@ -1,0 +1,53 @@
+@page "/crm/contacts/new"
+@using Crm.Application.CRM
+@using Crm.Application.Permissions
+@inject IContactService ContactsSvc
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@inject NavigationManager Nav
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>New Contact</h3>
+
+@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactCreate))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+<EditForm Model="_model" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">First name</label>
+        <InputText class="form-control" @bind-Value="_model.FirstName" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Last name</label>
+        <InputText class="form-control" @bind-Value="_model.LastName" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+        <InputText class="form-control" @bind-Value="_model.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Phone</label>
+        <InputText class="form-control" @bind-Value="_model.Phone" />
+    </div>
+
+    <button class="btn btn-primary" type="submit">Create</button>
+</EditForm>
+
+@code {
+    private ContactEditModel _model = new();
+
+    private async Task Save()
+    {
+        var id = await ContactsSvc.CreateAsync(CurrentUser.UserId!, _model.FirstName, _model.LastName, _model.Email, _model.Phone);
+        Nav.NavigateTo($"/crm/contacts/{id}");
+    }
+}

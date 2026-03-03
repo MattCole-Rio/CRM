@@ -1,0 +1,105 @@
+@page "/crm/businesses/{Id:guid}"
+@using Crm.Application.CRM
+@using Crm.Application.Permissions
+@inject IBusinessService Businesses
+@inject IContactService Contacts
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>Business</h3>
+
+@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessView))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+@if (_business is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <h4>@_business.Name</h4>
+
+    @if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.BusinessEdit))
+    {
+        <EditForm Model="_model" OnValidSubmit="Save">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <InputText class="form-control" @bind-Value="_model.Name" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText class="form-control" @bind-Value="_model.Email" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Phone</label>
+                <InputText class="form-control" @bind-Value="_model.Phone" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Website</label>
+                <InputText class="form-control" @bind-Value="_model.Website" />
+            </div>
+
+            <button class="btn btn-primary" type="submit">Save</button>
+        </EditForm>
+    }
+
+    <hr />
+    <h5>Link Contact</h5>
+    @if (_allContacts is null)
+    {
+        <p>Loading contacts...</p>
+    }
+    else
+    {
+        <select class="form-select" @bind="_selectedContactId">
+            <option value="">-- select contact --</option>
+            @foreach (var c in _allContacts)
+            {
+                <option value="@c.Id">@c.LastName, @c.FirstName (@c.Email)</option>
+            }
+        </select>
+        <button class="btn btn-secondary mt-2" @onclick="Link">Link</button>
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Crm.Application.CRM.DTOs.BusinessDto? _business;
+    private BusinessEditModel _model = new();
+
+    private IReadOnlyList<Crm.Application.CRM.DTOs.ContactDto>? _allContacts;
+    private Guid? _selectedContactId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _business = await Businesses.GetBusinessAsync(CurrentUser.UserId!, Id);
+        if (_business is null) return;
+
+        _model.Name = _business.Name;
+        _model.Email = _business.Email;
+        _model.Phone = _business.Phone;
+        _model.Website = _business.Website;
+
+        _allContacts = await Contacts.GetContactsAsync(CurrentUser.UserId!);
+    }
+
+    private async Task Save()
+    {
+        await Businesses.UpdateAsync(CurrentUser.UserId!, Id, _model.Name, _model.Email, _model.Phone, _model.Website);
+        _business = await Businesses.GetBusinessAsync(CurrentUser.UserId!, Id);
+    }
+
+    private async Task Link()
+    {
+        if (_selectedContactId is null) return;
+        await Businesses.LinkContactAsync(CurrentUser.UserId!, Id, _selectedContactId.Value);
+    }
+}

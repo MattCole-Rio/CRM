@@ -1,0 +1,78 @@
+@page "/crm/contacts/{Id:guid}"
+@using Crm.Application.CRM
+@using Crm.Application.Permissions
+@inject IContactService ContactsSvc
+@inject Crm.Application.Common.ICurrentUser CurrentUser
+@inject Crm.Application.Permissions.IPermissionService PermissionService
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+
+<h3>Contact</h3>
+
+@if (!await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactView))
+{
+    <p>Not authorized.</p>
+    return;
+}
+
+@if (_contact is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <h4>@_contact.LastName, @_contact.FirstName</h4>
+
+    @if (await PermissionService.HasPermissionAsync(CurrentUser.UserId!, PermissionKeys.Crm.ContactEdit))
+    {
+        <EditForm Model="_model" OnValidSubmit="Save">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="mb-3">
+                <label class="form-label">First name</label>
+                <InputText class="form-control" @bind-Value="_model.FirstName" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Last name</label>
+                <InputText class="form-control" @bind-Value="_model.LastName" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText class="form-control" @bind-Value="_model.Email" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone</label>
+                <InputText class="form-control" @bind-Value="_model.Phone" />
+            </div>
+
+            <button class="btn btn-primary" type="submit">Save</button>
+        </EditForm>
+    }
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Crm.Application.CRM.DTOs.ContactDto? _contact;
+    private ContactEditModel _model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contact = await ContactsSvc.GetContactAsync(CurrentUser.UserId!, Id);
+        if (_contact is null) return;
+
+        _model.FirstName = _contact.FirstName;
+        _model.LastName = _contact.LastName;
+        _model.Email = _contact.Email;
+        _model.Phone = _contact.Phone;
+    }
+
+    private async Task Save()
+    {
+        await ContactsSvc.UpdateAsync(CurrentUser.UserId!, Id, _model.FirstName, _model.LastName, _model.Email, _model.Phone);
+        _contact = await ContactsSvc.GetContactAsync(CurrentUser.UserId!, Id);
+    }
+}
