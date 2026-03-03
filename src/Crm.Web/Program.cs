@@ -50,6 +50,7 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+app.MapRazorPages();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

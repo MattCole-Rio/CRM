@@ -41,7 +41,7 @@ else
     [Parameter] public string RoleId { get; set; } = string.Empty;
 
     private Microsoft.AspNetCore.Identity.IdentityRole? _role;
-    private List<Crm.Infrastructure.Data.Entities.Permission> _permissions = new();
+    private List<Permission> _permissions = new();
     private HashSet<Guid> _assignedPermissionIds = new();
 
     protected override async Task OnInitializedAsync()

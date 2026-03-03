@@ -20,13 +20,13 @@ public static class DependencyInjection
             options.UseSqlServer(config.GetConnectionString("DefaultConnection")));
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-            {
-                options.SignIn.RequireConfirmedAccount = false;
-                options.Password.RequiredLength = 8;
-            })
+        {
+            options.SignIn.RequireConfirmedAccount = false;
+            options.Password.RequiredLength = 8;
+        })
             .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders()
-            .AddDefaultUI();
+            .AddDefaultTokenProviders();
+    
 
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IRecordAccessService, RecordAccessService>();
@@ -35,11 +35,9 @@ public static class DependencyInjection
         services.AddScoped<IContactService, ContactService>();
 
         // Tenant provider (single-tenant now)
-        var tenantId = Guid.Parse(config["Tenant:DefaultTenantId"] ?? throw new InvalidOperationException("Tenant:DefaultTenantId missing"));
+        var tenantId = Guid.Parse(config["Tenant:DefaultTenantId"]
+            ?? throw new InvalidOperationException("Tenant:DefaultTenantId missing"));
         services.AddSingleton<ITenantProvider>(new TenantProvider(tenantId));
-
-        // For PermissionService user manager generic mismatch, register IdentityUser manager mapping:
-        services.AddScoped<UserManager<IdentityUser>>(sp => (UserManager<IdentityUser>)(object)sp.GetRequiredService<UserManager<ApplicationUser>>());
 
         return services;
     }

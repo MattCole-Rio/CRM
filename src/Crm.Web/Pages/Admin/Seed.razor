@@ -1,15 +1,17 @@
 @page "/admin/seed"
+@attribute [Authorize]
+
+@using Crm.Infrastructure.Data.Entities
 @inject Crm.Infrastructure.Data.AppDbContext Db
 @inject Microsoft.AspNetCore.Identity.RoleManager<Microsoft.AspNetCore.Identity.IdentityRole> Roles
 @inject Microsoft.AspNetCore.Identity.UserManager<Crm.Infrastructure.Identity.ApplicationUser> Users
-@inject Crm.Application.Common.ITenantProvider Tenant
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject ITenantProvider Tenant
 
 <h3>Development Seed</h3>
 
 <p>This page seeds roles + permissions. Use only in Development.</p>
 
-<button class="btn btn-danger" @onclick="Seed">Seed Roles & Permissions</button>
+<button class="btn btn-danger" @onclick="RunSeed">Seed Roles & Permissions</button>
 
 @if (!string.IsNullOrWhiteSpace(_result))
 {
@@ -19,9 +21,8 @@
 @code {
     private string? _result;
 
-    private async Task Seed()
+    private async Task RunSeed()
     {
-        // Roles
         var roleNames = new[]
         {
             "Sales Member", "Sales Manager", "Marketing Member", "Marketing Manager", "Admin"
@@ -33,23 +34,22 @@
                 await Roles.CreateAsync(new Microsoft.AspNetCore.Identity.IdentityRole(rn));
         }
 
-        // Permissions
         var perms = new (string key, string desc)[]
         {
-            (Crm.Application.Permissions.PermissionKeys.Rbac.Manage, "Manage roles/permissions"),
-            (Crm.Application.Permissions.PermissionKeys.Crm.BusinessView, "View businesses"),
-            (Crm.Application.Permissions.PermissionKeys.Crm.BusinessCreate, "Create businesses"),
-            (Crm.Application.Permissions.PermissionKeys.Crm.BusinessEdit, "Edit businesses"),
-            (Crm.Application.Permissions.PermissionKeys.Crm.ContactView, "View contacts"),
-            (Crm.Application.Permissions.PermissionKeys.Crm.ContactCreate, "Create contacts"),
-            (Crm.Application.Permissions.PermissionKeys.Crm.ContactEdit, "Edit contacts"),
+            (PermissionKeys.Rbac.Manage, "Manage roles/permissions"),
+            (PermissionKeys.Crm.BusinessView, "View businesses"),
+            (PermissionKeys.Crm.BusinessCreate, "Create businesses"),
+            (PermissionKeys.Crm.BusinessEdit, "Edit businesses"),
+            (PermissionKeys.Crm.ContactView, "View contacts"),
+            (PermissionKeys.Crm.ContactCreate, "Create contacts"),
+            (PermissionKeys.Crm.ContactEdit, "Edit contacts"),
         };
 
         foreach (var p in perms)
         {
             if (!Db.Permissions.Any(x => x.TenantId == Tenant.TenantId && x.Key == p.key))
             {
-                Db.Permissions.Add(new Crm.Infrastructure.Data.Entities.Permission
+                Db.Permissions.Add(new Permission
                 {
                     PermissionId = Guid.NewGuid(),
                     TenantId = Tenant.TenantId,
@@ -61,9 +61,8 @@
 
         await Db.SaveChangesAsync();
 
-        // Assign RBAC.Manage to Admin role
         var adminRole = await Roles.FindByNameAsync("Admin");
-        var permManage = Db.Permissions.Single(x => x.TenantId == Tenant.TenantId && x.Key == Crm.Application.Permissions.PermissionKeys.Rbac.Manage);
+        var permManage = Db.Permissions.Single(x => x.TenantId == Tenant.TenantId && x.Key == PermissionKeys.Rbac.Manage);
 
         if (!Db.RolePermissions.Any(rp => rp.RoleId == adminRole!.Id && rp.PermissionId == permManage.PermissionId))
         {
@@ -76,6 +75,6 @@
             await Db.SaveChangesAsync();
         }
 
-        _result = "Seed complete. Add yourself to Admin role using SQL or a temporary admin tool (not included yet).";
+        _result = "Seed complete. (For now) assign yourself the Admin role in AspNetUserRoles, or ask for the User/Role admin UI file set.";
     }
 }

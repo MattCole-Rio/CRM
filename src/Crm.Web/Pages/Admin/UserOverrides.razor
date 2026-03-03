@@ -1,4 +1,5 @@
 @page "/admin/rbac/overrides"
+@using System.ComponentModel.DataAnnotations
 @inject Crm.Application.Common.ICurrentUser CurrentUser
 @inject Crm.Application.Permissions.IPermissionService PermissionService
 @inject Crm.Infrastructure.Data.AppDbContext Db
@@ -89,7 +90,7 @@
 
     private sealed class FormModel
     {
-        [System.ComponentModel.DataAnnotations.Required]
+        [Required]
         public string UserId { get; set; } = string.Empty;
 
         public Guid PermissionId { get; set; }

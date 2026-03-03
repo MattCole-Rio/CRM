@@ -1,10 +1,9 @@
 @page "/crm/businesses"
-@using Crm.Application.CRM
-@using Crm.Application.Permissions
-@inject IBusinessService Businesses
-@inject Crm.Application.Common.ICurrentUser CurrentUser
-@inject Crm.Application.Permissions.IPermissionService PermissionService
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@attribute [Authorize]
+
+@inject IBusinessService BusinessService
+@inject ICurrentUser CurrentUser
+@inject IPermissionService PermissionService
 
 <h3>Businesses</h3>
 
@@ -30,23 +29,23 @@ else
             <tr><th>Name</th><th>Email</th><th>Phone</th></tr>
         </thead>
         <tbody>
-        @foreach (var b in _rows)
-        {
-            <tr>
-                <td><a href="/crm/businesses/@b.Id">@b.Name</a></td>
-                <td>@b.Email</td>
-                <td>@b.Phone</td>
-            </tr>
-        }
+            @foreach (var b in _rows)
+            {
+                <tr>
+                    <td><a href="/crm/businesses/@b.Id">@b.Name</a></td>
+                    <td>@b.Email</td>
+                    <td>@b.Phone</td>
+                </tr>
+            }
         </tbody>
     </table>
 }
 
 @code {
-    private IReadOnlyList<Crm.Application.CRM.DTOs.BusinessDto>? _rows;
+    private IReadOnlyList<BusinessDto>? _rows;
 
     protected override async Task OnInitializedAsync()
     {
-        _rows = await Businesses.GetBusinessesAsync(CurrentUser.UserId!);
+        _rows = await BusinessService.GetBusinessesAsync(CurrentUser.UserId!);
     }
 }
